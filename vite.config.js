@@ -25,6 +25,6 @@ export default defineConfig({
       },
     },
     cssCodeSplit: false,
-    outDir: "dist-mf",
+    outDir: "dist-standalone",
   },
 });
