@@ -1,18 +1,71 @@
+name: Deploy shared package Bundles to S3
 
-- name: Build microfrontends
-  run: npm run build
+on:
+  push:
+    branches:
+      - main
 
-# Configure AWS (includes awscli)
-- name: Configure AWS credentials
-  uses: aws-actions/configure-aws-credentials@v4
-  with:
-    aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    aws-region: ap-south-1
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-# Upload to S3
-- name: Upload MF bundle to S3
-  run: |
-    S3_PATH=$(echo "$S3_PREFIX" | sed -E 's|https://([^.]+)\.s3[^/]*\.amazonaws\.com/?|s3://\1/|')
-    echo "📦 Uploading MF bundle to: ${S3_PATH}/shared-package/1.1/mf"
-    aws s3 cp dist-standalone/ "${S3_PATH}/shared-package/1.1/mf" --recursive
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Setup Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Validate and load .env
+      - name: Load and validate env variables
+        run: |
+          if [ ! -f .env ]; then
+            echo "❌ .env file not found"
+            exit 1
+          fi
+
+          if ! grep -q "^S3_PREFIX=" .env; then
+            echo "❌ S3_PREFIX not found in .env"
+            exit 1
+          fi
+
+          export $(grep -v '^#' .env | xargs)
+          echo "S3_PREFIX=$S3_PREFIX" >> $GITHUB_ENV
+
+          echo "✅ Loaded S3_PREFIX=$S3_PREFIX"
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Build standalone bundle
+      - name: Build Standalone bundle
+        run: npm run build-standalone
+
+      # Configure AWS (installs awscli v2 automatically)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      # Upload bundles to S3
+      - name: Upload bundles to S3
+        run: |
+          S3_PATH=$(echo "$S3_PREFIX" | sed -E 's|https://([^.]+)\.s3[^/]*\.amazonaws\.com/?|s3://\1/|')
+
+          echo "📦 Uploading MF bundle to ${S3_PATH}/shared-package/1.1/mf"
+          aws s3 cp dist-mf/ "${S3_PATH}/shared-package/1.1/mf" \
+            --recursive \
+            --acl public-read
+
+          echo "📦 Uploading Standalone bundle to ${S3_PATH}/shared-package/1.1/standalone"
+          aws s3 cp dist-standalone/ "${S3_PATH}/shared-package/1.1/standalone" \
+            --recursive \
+            --acl public-read
