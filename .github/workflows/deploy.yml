@@ -41,11 +41,11 @@ jobs:
 
       # Install dependencies
       - name: Install dependencies
-        run: npm install
+        run: npm install -f
 
       # Build standalone bundle
       - name: Build Standalone bundle
-        run: npm run build-standalone
+        run: npm run build
 
       # Configure AWS (installs awscli v2 automatically)
       - name: Configure AWS credentials
