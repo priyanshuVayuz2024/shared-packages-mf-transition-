@@ -65,7 +65,7 @@ jobs:
           echo "📦 Uploading Standalone bundle to ${S3_PATH}/shared-package/1.1/standalone"
           aws s3 cp dist-standalone/ "${S3_PATH}/shared-package/1.1/standalone" \
             --recursive \
-            --acl public-read
-            
+         
+
         env:
           AWS_DEFAULT_REGION: ap-south-1
