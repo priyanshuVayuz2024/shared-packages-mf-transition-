@@ -48,7 +48,7 @@ jobs:
 
       # Build MF bundles
       - name: Build microfrontends
-        run: npm run build-mfs
+        run: npm run build
 
       # Install AWS CLI
       - name: Install AWS CLI
